@@ -1,0 +1,51 @@
+module.exports = {
+  apps: [
+    {
+      name: 'hiddenglow-api',
+      cwd: '/var/www/hiddenglow.pk/backend',
+      script: 'dist/main.js',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 4001,
+      },
+      instances: 1,
+      autorestart: true,
+      max_memory_restart: '512M',
+      error_file: '/var/www/hiddenglow.pk/logs/api-error.log',
+      out_file: '/var/www/hiddenglow.pk/logs/api-out.log',
+      merge_logs: true,
+    },
+    {
+      name: 'hiddenglow-web',
+      cwd: '/var/www/hiddenglow.pk/frontend',
+      script: 'node_modules/.bin/next',
+      args: 'start -p 3001',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3001,
+      },
+      instances: 1,
+      autorestart: true,
+      max_memory_restart: '512M',
+      error_file: '/var/www/hiddenglow.pk/logs/web-error.log',
+      out_file: '/var/www/hiddenglow.pk/logs/web-out.log',
+      merge_logs: true,
+    },
+    {
+      name: 'hiddenglow-ml',
+      cwd: '/var/www/hiddenglow.pk/ml-service',
+      interpreter: '/var/www/hiddenglow.pk/ml-service/venv/bin/python3',
+      script: 'main.py',
+      env: {
+        API_PORT: 4002,
+      },
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      max_memory_restart: '512M',
+      error_file: '/var/www/hiddenglow.pk/logs/ml-error.log',
+      out_file: '/var/www/hiddenglow.pk/logs/ml-out.log',
+      merge_logs: true,
+    },
+  ],
+};

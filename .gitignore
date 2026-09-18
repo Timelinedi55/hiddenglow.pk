@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+ml-service/venv/
+__pycache__/
+*.py[cod]
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Build output
+frontend/.next/
+frontend/out/
+backend/dist/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
