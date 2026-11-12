@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { Product, Category } from '@/lib/types';
@@ -8,16 +8,30 @@ import ProductCard from '@/components/ProductCard';
 import { HiChevronRight } from 'react-icons/hi';
 import MediaImage from '@/components/MediaImage';
 
-export default function CategoryPageClient({ slug }: { slug: string }) {
-  const [category, setCategory] = useState<Category | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+export interface CategoryInitial {
+  category: Category;
+  items: Product[];
+  total: number;
+  totalPages: number;
+}
+
+export default function CategoryPageClient({ slug, initial }: { slug: string; initial?: CategoryInitial | null }) {
+  // Category + first page of products are server-rendered (page.tsx) so the HTML is complete on arrival.
+  const usable = initial && initial.category?.slug === slug ? initial : null;
+  const skipFirstFetch = useRef(!!usable);
+  const [category, setCategory] = useState<Category | null>(usable?.category || null);
+  const [products, setProducts] = useState<Product[]>(usable?.items || []);
+  const [loading, setLoading] = useState(!usable);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(usable?.totalPages || 1);
+  const [total, setTotal] = useState(usable?.total || 0);
   const [sort, setSort] = useState('newest');
 
   useEffect(() => {
+    if (skipFirstFetch.current) {
+      skipFirstFetch.current = false;
+      return;
+    }
     setLoading(true);
     api.get(`/categories/slug/${slug}`).then((cat) => {
       setCategory(cat);

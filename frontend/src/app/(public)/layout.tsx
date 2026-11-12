@@ -3,10 +3,17 @@ import Footer from '@/components/Footer';
 import CartDrawer from '@/components/CartDrawer';
 import WhatsAppFloat from '@/components/WhatsAppFloat';
 import { SiteDataProvider } from '@/lib/SiteDataProvider';
+import { serverGet } from '@/lib/serverApi';
+import { Category } from '@/lib/types';
 
-export default function PublicLayout({ children }: { children: React.ReactNode }) {
+export default async function PublicLayout({ children }: { children: React.ReactNode }) {
+  const [settings, categories] = await Promise.all([
+    serverGet<Record<string, any> | null>('/settings', null),
+    serverGet<Category[] | null>('/categories', null),
+  ]);
+
   return (
-    <SiteDataProvider>
+    <SiteDataProvider initialSettings={settings} initialCategories={Array.isArray(categories) ? categories : null}>
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-brand-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-medium">
         Skip to main content
       </a>

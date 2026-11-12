@@ -2,6 +2,8 @@
 const isProduction = process.env.NODE_ENV === 'production';
 
 const nextConfig = {
+  // Build into a side directory (NEXT_DIST_DIR=.next-new) and swap, so a build never touches the live .next.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   images: {
     remotePatterns: [
       {

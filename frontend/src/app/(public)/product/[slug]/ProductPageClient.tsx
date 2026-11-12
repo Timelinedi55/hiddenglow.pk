@@ -32,14 +32,16 @@ function getVideoEmbedUrl(url: string): { type: 'youtube' | 'vimeo' | 'direct'; 
   return { type: 'direct', embedUrl: url };
 }
 
-export default function ProductPageClient({ slug }: { slug: string }) {
+export default function ProductPageClient({ slug, initialData }: { slug: string; initialData?: { product: Product; related?: Product[] } | null }) {
   const router = useRouter();
   const { settings } = useSiteData();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [related, setRelated] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Server-rendered product (page.tsx) so the first HTML shows the product instead of a skeleton.
+  const initialProduct = initialData?.product && initialData.product.slug === slug ? initialData.product : null;
+  const [product, setProduct] = useState<Product | null>(initialProduct);
+  const [related, setRelated] = useState<Product[]>(initialProduct ? initialData?.related || [] : []);
+  const [loading, setLoading] = useState(!initialProduct);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(initialProduct?.variants?.[0] || null);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<'description' | 'reviews'>('description');
   const [imageZoom, setImageZoom] = useState(false);
@@ -51,7 +53,23 @@ export default function ProductPageClient({ slug }: { slug: string }) {
   const galleryRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
 
+  const hydratedSlugRef = useRef<string | null>(initialProduct ? slug : null);
+
   useEffect(() => {
+    // First render already has server data: refresh it quietly in the background (fresh stock/price)
+    // without showing the skeleton or resetting the shopper's selections.
+    if (hydratedSlugRef.current === slug) {
+      hydratedSlugRef.current = null;
+      const p0 = initialProduct!;
+      trackEvent.viewProduct({ id: p0.id, name: p0.name, price: p0.discountPrice || p0.price, category: p0.category?.name });
+      api.get(`/products/slug/${slug}/full`).then(({ product: p, related: rel }) => {
+        setProduct(p);
+        setRelated(rel || []);
+        setSelectedVariant((cur) => (cur && p.variants?.find((v: ProductVariant) => v.id === cur.id)) || p.variants?.[0] || null);
+      }).catch(() => {});
+      return;
+    }
+
     setLoading(true);
     setSelectedImage(0);
     setSelectedVariant(null);
@@ -65,7 +83,7 @@ export default function ProductPageClient({ slug }: { slug: string }) {
       setLoading(false);
       trackEvent.viewProduct({ id: p.id, name: p.name, price: p.discountPrice || p.price, category: p.category?.name });
     }).catch(() => setLoading(false));
-  }, [slug]);
+  }, [slug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-set initial color when product has color variants
   useEffect(() => {

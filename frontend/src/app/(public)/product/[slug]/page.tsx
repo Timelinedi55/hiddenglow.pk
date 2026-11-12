@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
 import ProductPageClient from './ProductPageClient';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL?.startsWith('http')
-  ? process.env.NEXT_PUBLIC_API_URL
-  : 'http://localhost:4001/api';
+import { SERVER_API_URL as API_URL } from '@/lib/serverApi';
 
 async function getProduct(slug: string) {
   try {
@@ -100,7 +98,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
       {breadcrumbJsonLd && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       )}
-      <ProductPageClient slug={params.slug} />
+      <ProductPageClient slug={params.slug} initialData={data?.product ? data : null} />
     </>
   );
 }

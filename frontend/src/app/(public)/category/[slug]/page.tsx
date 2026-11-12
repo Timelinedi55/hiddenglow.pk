@@ -1,9 +1,6 @@
 import type { Metadata } from 'next';
-import CategoryPageClient from './CategoryPageClient';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL?.startsWith('http')
-  ? process.env.NEXT_PUBLIC_API_URL
-  : 'http://localhost:4001/api';
+import CategoryPageClient, { CategoryInitial } from './CategoryPageClient';
+import { SERVER_API_URL as API_URL, serverGet } from '@/lib/serverApi';
 
 async function getCategory(slug: string) {
   try {
@@ -36,7 +33,15 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default function CategoryPage({ params }: { params: { slug: string } }) {
+export default async function CategoryPage({ params }: { params: { slug: string } }) {
+  const cat = await getCategory(params.slug);
+  const data = cat?.id
+    ? await serverGet<{ items: any[]; total: number; totalPages: number } | null>(`/products?category=${cat.id}&page=1&limit=12&sort=newest`, null, 60)
+    : null;
+  const initial: CategoryInitial | null = cat && data && Array.isArray(data.items)
+    ? { category: cat, items: data.items, total: data.total, totalPages: data.totalPages }
+    : null;
+
   const breadcrumbJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -50,7 +55,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-      <CategoryPageClient slug={params.slug} />
+      <CategoryPageClient slug={params.slug} initial={initial} />
     </>
   );
 }
